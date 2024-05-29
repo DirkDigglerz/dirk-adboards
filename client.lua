@@ -19,11 +19,18 @@ local editAdvert = function(data)
   return newAd, data
 end
 
+local is_right_job = function()
+  local job_lock = Config.locked_jobs
+  if not job_lock then return true; end 
+  local job = Core.Player.GetJob()
+  if not job then return true; end
+  return job_lock[job.name]
+end
+
 
 viewAllAds = function()
   local ads = Core.SyncCallback('dirk-adBoards:getAds')
-  print('GOT ADS AS ')
-  print(json.encode(ads))
+
   local options = {
     {
       title = "New Advertisement",
@@ -31,6 +38,10 @@ viewAllAds = function()
       description = "Create a new advertisement.",
       
       onSelect = function()
+        local is_job = is_right_job()
+        if not is_job then 
+          return Core.UI.Notify('You are not allowed to post ads.', 'error')
+        end
         local newAd, data = editAdvert({})
         if newAd then 
           TriggerServerEvent('dirk-adBoards:newAd', data)
@@ -41,7 +52,6 @@ viewAllAds = function()
 
   }
   for k,v in pairs(ads) do
-    print('MY CID ', myCID, v.authorID)
     table.insert(options, {
       title = v.title,
       icon  = v.image or "fas fa-ad",
@@ -109,7 +119,6 @@ CreateThread(function()
   while not Core do Wait(500); end 
   while not Core.Player.Ready() do Wait(500); end
   myCID = Core.Player.Identifier()
-  print('ADDING MODELS ', Config.adBoardModels)
   Core.Target.AddModels({
     Models   = Config.adBoardModels, 
     Distance = 5.0,
